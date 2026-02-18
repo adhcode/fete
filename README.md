@@ -1,29 +1,24 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Fete Backend - Event photo sharing platform API built with NestJS.
+
+## Features
+
+- Event management with unique shareable codes
+- Direct photo uploads to Cloudflare R2
+- Background image processing (thumbnails & optimized versions)
+- Rate limiting per event and per guest
+- Photo approval workflow
+- Public gallery support
+
+## Architecture
+
+The application consists of two main processes:
+
+1. **API Server** (`src/main.ts`) - Handles HTTP requests, event management, and upload coordination
+2. **Worker** (`src/worker.main.ts`) - Processes uploaded images in the background using BullMQ
 
 ## Project setup
 
@@ -31,17 +26,43 @@
 $ npm install
 ```
 
-## Compile and run the project
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure:
 
 ```bash
-# development
-$ npm run start
+DATABASE_URL=postgresql://user:password@localhost:5432/fete
+REDIS_URL=redis://localhost:6379
+R2_ENDPOINT=https://your-account.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=your_key
+R2_SECRET_ACCESS_KEY=your_secret
+R2_BUCKET=fete-photos
+R2_PUBLIC_BASE_URL=https://your-public-domain-or-r2dev
+```
 
-# watch mode
+## Database Setup
+
+```bash
+# Run migrations
+$ npx prisma migrate dev
+
+# Seed database
+$ npm run prisma:seed
+```
+
+## Running the Application
+
+```bash
+# Start API server (development)
 $ npm run start:dev
 
-# production mode
-$ npm run start:prod
+# Start worker (development) - in separate terminal
+$ npm run start:worker
+
+# Production
+$ npm run build
+$ npm run start:prod  # API server
+$ npm run worker:prod # Worker (separate process)
 ```
 
 ## Run tests
