@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
-import sharp from 'sharp';
+import * as sharp from 'sharp';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../storage/storage.service';
 import { PHOTO_QUEUE_NAME, REDIS_CONN } from '../../queue/queue.module';
