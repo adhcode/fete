@@ -13,24 +13,37 @@ export default function UploadSection({ eventCode, uploaderHash, onUploadComplet
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
+    // Determine media type
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+
+    if (!isVideo && !isImage) {
+      setError('Please select an image or video file');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
+    // Validate file size
+    const maxSize = isVideo ? 40 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      setError(`File size must be less than ${isVideo ? '40MB' : '10MB'}`);
+      return;
+    }
+
+    // Validate video type
+    if (isVideo && file.type !== 'video/mp4') {
+      setError('Only MP4 videos are supported');
       return;
     }
 
     setSelectedFile(file);
+    setMediaType(isVideo ? 'VIDEO' : 'IMAGE');
     setError(null);
 
     // Create preview
@@ -49,6 +62,7 @@ export default function UploadSection({ eventCode, uploaderHash, onUploadComplet
       // 1. Get upload intent
       const { photoId, uploadUrl } = await api.createUploadIntent({
         eventCode,
+        mediaType,
         contentType: selectedFile.type,
         fileSizeBytes: selectedFile.size,
         caption: caption.trim() || undefined,
@@ -65,6 +79,7 @@ export default function UploadSection({ eventCode, uploaderHash, onUploadComplet
       setSelectedFile(null);
       setCaption('');
       setPreview(null);
+      setMediaType('IMAGE');
       if (fileInputRef.current) fileInputRef.current.value = '';
 
       // Notify parent
@@ -95,15 +110,24 @@ export default function UploadSection({ eventCode, uploaderHash, onUploadComplet
       <div className="space-y-4">
         {preview ? (
           <div className="relative">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-full h-64 object-cover rounded-lg"
-            />
+            {mediaType === 'VIDEO' ? (
+              <video
+                src={preview}
+                className="w-full h-64 object-cover rounded-lg"
+                controls
+              />
+            ) : (
+              <img
+                src={preview}
+                alt="Preview"
+                className="w-full h-64 object-cover rounded-lg"
+              />
+            )}
             <button
               onClick={() => {
                 setSelectedFile(null);
                 setPreview(null);
+                setMediaType('IMAGE');
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
               className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
@@ -112,13 +136,18 @@ export default function UploadSection({ eventCode, uploaderHash, onUploadComplet
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            {mediaType === 'VIDEO' && (
+              <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
+                Video (max 15s)
+              </div>
+            )}
           </div>
         ) : (
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/*,video/mp4"
               capture="environment"
               onChange={handleFileSelect}
               className="hidden"
@@ -131,9 +160,12 @@ export default function UploadSection({ eventCode, uploaderHash, onUploadComplet
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Take Photo or Choose File
+              Take Photo or Video
             </button>
-            <p className="mt-2 text-sm text-gray-500">JPEG or PNG, max 10MB</p>
+            <p className="mt-2 text-sm text-gray-500">
+              Images: JPEG/PNG, max 10MB<br />
+              Videos: MP4 only, max 40MB, 15s
+            </p>
           </div>
         )}
 

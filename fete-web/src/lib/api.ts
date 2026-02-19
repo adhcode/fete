@@ -1,4 +1,4 @@
-import type { Photo, Event, UploadIntentResponse, GetPhotosResponse } from '../types';
+import type { Photo, Event, UploadIntentResponse, GetPhotosResponse, GetStoryResponse } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -17,6 +17,7 @@ class ApiClient {
 
   async createUploadIntent(params: {
     eventCode: string;
+    mediaType?: 'IMAGE' | 'VIDEO';
     contentType: string;
     fileSizeBytes?: number;
     caption?: string;
@@ -25,7 +26,10 @@ class ApiClient {
     const res = await fetch(`${this.baseUrl}/api/upload-intent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        ...params,
+        mediaType: params.mediaType || 'IMAGE',
+      }),
     });
     if (!res.ok) {
       const error = await res.json();
@@ -77,6 +81,24 @@ class ApiClient {
   async getPhoto(photoId: string): Promise<Photo & { event: { id: string; name: string; code: string } }> {
     const res = await fetch(`${this.baseUrl}/api/photos/${photoId}`);
     if (!res.ok) throw new Error('Photo not found');
+    return res.json();
+  }
+
+  async getEventStory(
+    eventCode: string,
+    params?: {
+      limit?: number;
+      cursor?: string;
+    }
+  ): Promise<GetStoryResponse> {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set('limit', params.limit.toString());
+    if (params?.cursor) query.set('cursor', params.cursor);
+
+    const res = await fetch(
+      `${this.baseUrl}/api/events/${eventCode}/story?${query}`
+    );
+    if (!res.ok) throw new Error('Failed to fetch story');
     return res.json();
   }
 }

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
-import { UploadIntentDto, GetPhotosQueryDto } from './dto';
+import { UploadIntentDto, GetPhotosQueryDto, GetStoryQueryDto } from './dto';
 import { randomBytes } from 'crypto';
 import { Queue } from 'bullmq';
 import { PHOTO_QUEUE } from '../queue/queue.module';
@@ -59,7 +59,16 @@ export class UploadsService {
 
     // 3. Create photo record
     const photoId = randomBytes(16).toString('hex');
-    const ext = dto.contentType === 'image/png' ? 'png' : 'jpg';
+    const mediaType = dto.mediaType || 'IMAGE';
+    
+    // Determine file extension
+    let ext: string;
+    if (mediaType === 'VIDEO') {
+      ext = 'mp4';
+    } else {
+      ext = dto.contentType === 'image/png' ? 'png' : 'jpg';
+    }
+    
     const storageKey = `events/${event.id}/originals/${photoId}.${ext}`;
 
     const photo = await this.prisma.photo.create({
@@ -67,6 +76,8 @@ export class UploadsService {
         id: photoId,
         eventId: event.id,
         status: 'PENDING_UPLOAD',
+        mediaType,
+        mimeType: dto.contentType,
         caption: dto.caption,
         uploaderHash: dto.uploaderHash,
         originalKey: storageKey,
@@ -128,7 +139,7 @@ export class UploadsService {
       throw new NotFoundException('Event not found');
     }
 
-    const { page, limit, cursor, status, approved } = query;
+    const { page, limit, cursor, status, approved, mediaType } = query;
 
     const where: any = { eventId: event.id };
     
@@ -140,6 +151,7 @@ export class UploadsService {
     }
     
     if (status) where.status = status;
+    if (mediaType) where.mediaType = mediaType;
 
     // Cursor-based pagination (if cursor provided)
     if (cursor) {
@@ -154,10 +166,15 @@ export class UploadsService {
           caption: true,
           status: true,
           approved: true,
+          mediaType: true,
+          mimeType: true,
           width: true,
           height: true,
           largeKey: true,
           thumbKey: true,
+          playbackKey: true,
+          posterKey: true,
+          durationSec: true,
           createdAt: true,
         },
       });
@@ -167,11 +184,7 @@ export class UploadsService {
         : null;
 
       return {
-        data: photos.map((p) => ({
-          ...p,
-          largeUrl: p.largeKey ? this.storage.publicUrl(p.largeKey) : null,
-          thumbUrl: p.thumbKey ? this.storage.publicUrl(p.thumbKey) : null,
-        })),
+        data: photos.map((p) => this.mapPhotoToResponse(p)),
         nextCursor,
       };
     }
@@ -190,10 +203,15 @@ export class UploadsService {
           caption: true,
           status: true,
           approved: true,
+          mediaType: true,
+          mimeType: true,
           width: true,
           height: true,
           largeKey: true,
           thumbKey: true,
+          playbackKey: true,
+          posterKey: true,
+          durationSec: true,
           createdAt: true,
         },
       }),
@@ -201,17 +219,43 @@ export class UploadsService {
     ]);
 
     return {
-      data: photos.map((p) => ({
-        ...p,
-        largeUrl: p.largeKey ? this.storage.publicUrl(p.largeKey) : null,
-        thumbUrl: p.thumbKey ? this.storage.publicUrl(p.thumbKey) : null,
-      })),
+      data: photos.map((p) => this.mapPhotoToResponse(p)),
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  private mapPhotoToResponse(photo: any) {
+    const base = {
+      id: photo.id,
+      caption: photo.caption,
+      status: photo.status,
+      approved: photo.approved,
+      mediaType: photo.mediaType,
+      mimeType: photo.mimeType,
+      width: photo.width,
+      height: photo.height,
+      createdAt: photo.createdAt,
+    };
+
+    if (photo.mediaType === 'VIDEO') {
+      return {
+        ...base,
+        playbackUrl: photo.playbackKey ? this.storage.publicUrl(photo.playbackKey) : null,
+        posterUrl: photo.posterKey ? this.storage.publicUrl(photo.posterKey) : null,
+        durationSec: photo.durationSec,
+      };
+    }
+
+    // IMAGE
+    return {
+      ...base,
+      largeUrl: photo.largeKey ? this.storage.publicUrl(photo.largeKey) : null,
+      thumbUrl: photo.thumbKey ? this.storage.publicUrl(photo.thumbKey) : null,
     };
   }
 
@@ -269,5 +313,60 @@ export class UploadsService {
     });
 
     return { success: true, photoId, approved };
+  }
+
+  async getEventStory(eventCode: string, query: GetStoryQueryDto) {
+    const event = await this.prisma.event.findUnique({
+      where: { code: eventCode },
+      select: { id: true, approvalRequired: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const { limit, cursor } = query;
+
+    const where: any = {
+      eventId: event.id,
+      status: 'PROCESSED',
+    };
+
+    // Only show approved media for guests
+    if (event.approvalRequired) {
+      where.approved = true;
+    }
+
+    if (cursor) {
+      where.createdAt = { lt: new Date(cursor) };
+    }
+
+    const media = await this.prisma.photo.findMany({
+      where,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        caption: true,
+        mediaType: true,
+        mimeType: true,
+        width: true,
+        height: true,
+        largeKey: true,
+        thumbKey: true,
+        playbackKey: true,
+        posterKey: true,
+        durationSec: true,
+        createdAt: true,
+      },
+    });
+
+    const nextCursor =
+      media.length === limit ? media[media.length - 1].createdAt.toISOString() : null;
+
+    return {
+      data: media.map((m) => this.mapPhotoToResponse(m)),
+      nextCursor,
+    };
   }
 }
