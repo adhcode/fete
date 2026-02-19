@@ -1,14 +1,31 @@
-export interface Photo {
+export type MediaType = 'IMAGE' | 'VIDEO';
+
+export interface Media {
   id: string;
   caption?: string;
   status: 'PENDING_UPLOAD' | 'UPLOADED' | 'PROCESSED' | 'FAILED';
   approved: boolean;
+  mediaType: MediaType;
+  mimeType?: string;
   width?: number;
   height?: number;
-  largeUrl?: string;
-  thumbUrl?: string;
   createdAt: string;
 }
+
+export interface ImageMedia extends Media {
+  mediaType: 'IMAGE';
+  largeUrl?: string;
+  thumbUrl?: string;
+}
+
+export interface VideoMedia extends Media {
+  mediaType: 'VIDEO';
+  playbackUrl?: string;
+  posterUrl?: string;
+  durationSec?: number;
+}
+
+export type Photo = ImageMedia | VideoMedia;
 
 export interface Event {
   id: string;
@@ -37,4 +54,9 @@ export interface GetPhotosResponse {
     total: number;
     totalPages: number;
   };
+}
+
+export interface GetStoryResponse {
+  data: Photo[];
+  nextCursor?: string | null;
 }

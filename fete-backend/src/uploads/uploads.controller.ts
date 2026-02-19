@@ -12,6 +12,7 @@ import {
   UploadIntentSchema,
   CompleteUploadSchema,
   GetPhotosQuerySchema,
+  GetStoryQuerySchema,
   ApprovePhotoSchema,
 } from './dto';
 
@@ -54,5 +55,22 @@ export class UploadsController {
   async approvePhoto(@Param('photoId') photoId: string, @Body() body: any) {
     const dto = ApprovePhotoSchema.parse(body);
     return this.uploads.approvePhoto(photoId, dto.approved);
+  }
+
+  // Get story feed for an event (mixed images + videos)
+  @Get('events/:eventCode/story')
+  async getEventStory(
+    @Param('eventCode') eventCode: string,
+    @Query() query: any,
+  ) {
+    const dto = GetStoryQuerySchema.parse(query);
+    return this.uploads.getEventStory(eventCode, dto);
+  }
+
+  // Alias for media approval (can use either photos or media)
+  @Patch('media/:mediaId/approve')
+  async approveMedia(@Param('mediaId') mediaId: string, @Body() body: any) {
+    const dto = ApprovePhotoSchema.parse(body);
+    return this.uploads.approvePhoto(mediaId, dto.approved);
   }
 }

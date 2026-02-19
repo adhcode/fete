@@ -14,6 +14,11 @@ enum PhotoStatus {
   FAILED
 }
 
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
 model Organizer {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -80,13 +85,24 @@ model Photo {
   status   PhotoStatus @default(PENDING_UPLOAD)
   approved Boolean     @default(true)
 
+  // Media type and format
+  mediaType MediaType @default(IMAGE)
+  mimeType  String?
+
   // Guest-provided caption for sharing (optional)
   caption String?
 
   // Storage keys in R2 (never store full signed URLs here)
   originalKey String?
-  largeKey    String?
-  thumbKey    String?
+  
+  // For images
+  largeKey String?
+  thumbKey String?
+  
+  // For videos
+  playbackKey String? // processed mp4
+  posterKey   String? // thumbnail jpg
+  durationSec Int?    // video duration in seconds
 
   width  Int?
   height Int?
@@ -104,6 +120,7 @@ model Photo {
 
   @@index([eventId, createdAt])
   @@index([eventId, approved, createdAt])
+  @@index([eventId, mediaType, createdAt])
   @@index([status])
 }
 
