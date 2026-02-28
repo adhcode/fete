@@ -28,12 +28,15 @@ model Organizer {
 model Template {
   id         String   @id @default(cuid())
   name       String
-  previewUrl String?
-  config     Json // overlay assets + text layout + theme
+  previewUrl String? // Public URL to preview image
+  overlayKey String? // R2 key for overlay PNG
+  config     Json    // Template configuration (text fields, overlay settings)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   events Event[]
+
+  @@index([createdAt])
 }
 
 model Event {

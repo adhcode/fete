@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { generateEventCode } from './event-code.util';
 
 @Injectable()
 export class EventsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storage: StorageService,
+  ) {}
 
   async createEvent(data: {
     name: string;
@@ -47,6 +51,19 @@ export class EventsService {
 
     if (!event) {
       throw new NotFoundException('Event not found');
+    }
+
+    // Map template with proper overlayUrl
+    if (event.template) {
+      return {
+        ...event,
+        template: {
+          ...event.template,
+          overlayUrl: event.template.overlayKey
+            ? this.storage.publicUrl(event.template.overlayKey)
+            : null,
+        },
+      };
     }
 
     return event;
