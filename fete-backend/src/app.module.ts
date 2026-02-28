@@ -7,6 +7,7 @@ import { EventsModule } from './events/events.module';
 import { StorageModule } from './storage/storage.module';
 import { QueueModule } from './queue/queue.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UploadsModule } from './uploads/uploads.module';
     StorageModule,
     QueueModule,
     UploadsModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

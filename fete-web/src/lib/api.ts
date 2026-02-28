@@ -1,4 +1,4 @@
-import type { Photo, Event, UploadIntentResponse, GetPhotosResponse, GetStoryResponse } from '../types';
+import type { Photo, Event, UploadIntentResponse, GetPhotosResponse, GetStoryResponse, Template } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -12,6 +12,18 @@ class ApiClient {
   async getEvent(code: string): Promise<Event> {
     const res = await fetch(`${this.baseUrl}/events/${code}`);
     if (!res.ok) throw new Error('Event not found');
+    return res.json();
+  }
+
+  async getTemplates(): Promise<Template[]> {
+    const res = await fetch(`${this.baseUrl}/api/templates`);
+    if (!res.ok) throw new Error('Failed to fetch templates');
+    return res.json();
+  }
+
+  async getTemplate(id: string): Promise<Template> {
+    const res = await fetch(`${this.baseUrl}/api/templates/${id}`);
+    if (!res.ok) throw new Error('Template not found');
     return res.json();
   }
 
@@ -38,10 +50,11 @@ class ApiClient {
     return res.json();
   }
 
-  async uploadToR2(url: string, file: File): Promise<void> {
+  async uploadToR2(url: string, file: File | Blob): Promise<void> {
+    const contentType = file instanceof File ? file.type : 'image/jpeg';
     const res = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': file.type },
+      headers: { 'Content-Type': contentType },
       body: file,
     });
     if (!res.ok) throw new Error('Failed to upload file');

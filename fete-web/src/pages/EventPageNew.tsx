@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Event, Photo } from '../types';
 import { getUploaderHash } from '../lib/storage';
-import CameraView from '../components/CameraView';
+import CameraView from '../components/CameraViewWithTemplate';
 import Gallery from '../components/Gallery';
 import StoryViewer from '../components/StoryViewer';
 
@@ -129,7 +129,7 @@ export default function EventPageNew() {
       <div className="absolute inset-0">
         {currentView === 'camera' && (
           <CameraView
-            eventCode={event.code}
+            event={event}
             uploaderHash={getUploaderHash()}
             onUploadComplete={handleUploadComplete}
           />
@@ -149,43 +149,12 @@ export default function EventPageNew() {
         )}
 
         {currentView === 'stories' && storyMedia.length > 0 && (
-          <div className="w-full h-full overflow-y-auto bg-black">
-            <div className="p-4">
-              <h2 className="text-2xl font-bold text-white mb-6">Stories</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {storyMedia.map((media, idx) => (
-                  <button
-                    key={media.id}
-                    onClick={() => setShowStoryViewer(true)}
-                    className="relative aspect-[9/16] rounded-lg overflow-hidden"
-                  >
-                    {media.mediaType === 'VIDEO' ? (
-                      <img
-                        src={(media as any).posterUrl}
-                        alt={media.caption || 'Video'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={(media as any).largeUrl}
-                        alt={media.caption || 'Photo'}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    {media.mediaType === 'VIDEO' && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="bg-black/50 rounded-full p-3">
-                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
-                        </div>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <StoryViewer
+            media={storyMedia}
+            initialIndex={0}
+            onClose={() => setCurrentView('camera')}
+            onLoadMore={storyNextCursor ? handleLoadMoreStory : undefined}
+          />
         )}
 
         {currentView === 'stories' && storyMedia.length === 0 && (
