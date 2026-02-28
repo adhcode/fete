@@ -29,3 +29,11 @@ Thumbs.db
 
 # Prisma
 prisma/migrations/
+
+# Test images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+adh.jpg

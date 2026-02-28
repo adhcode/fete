@@ -20,17 +20,12 @@ export default function CameraView({ eventCode, uploaderHash, onUploadComplete }
   const [cameraReady, setCameraReady] = useState(false);
   const [previewMedia, setPreviewMedia] = useState<{ file: File; url: string; type: 'image' | 'video' } | null>(null);
   const [caption, setCaption] = useState('');
-  const [textOverlays, setTextOverlays] = useState<Array<{ id: string; text: string; x: number; y: number; color: string }>>([]);
-  const [isAddingText, setIsAddingText] = useState(false);
-  const [editingTextId, setEditingTextId] = useState<string | null>(null);
-  const [newText, setNewText] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const textInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     startCamera();
@@ -180,89 +175,7 @@ export default function CameraView({ eventCode, uploaderHash, onUploadComplete }
       URL.revokeObjectURL(previewMedia.url);
       setPreviewMedia(null);
       setCaption('');
-      setTextOverlays([]);
-      setIsAddingText(false);
-      setEditingTextId(null);
-      setNewText('');
     }
-  }
-
-  async function handleDownloadMedia() {
-    if (!previewMedia) return;
-
-    try {
-      // Fetch the blob from the URL
-      const response = await fetch(previewMedia.url);
-      const blob = await response.blob();
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `fete-${Date.now()}.${previewMedia.type === 'video' ? 'webm' : 'jpg'}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Download failed:', err);
-      setError('Download failed');
-    }
-  }
-
-  function handleAddText() {
-    setIsAddingText(true);
-    setNewText('');
-    setTimeout(() => textInputRef.current?.focus(), 100);
-  }
-
-  function handleSaveText() {
-    if (!newText.trim()) {
-      setIsAddingText(false);
-      return;
-    }
-
-    const colors = ['#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-    if (editingTextId) {
-      setTextOverlays(prev => prev.map(t =>
-        t.id === editingTextId ? { ...t, text: newText } : t
-      ));
-      setEditingTextId(null);
-    } else {
-      const newOverlay = {
-        id: Date.now().toString(),
-        text: newText,
-        x: 50, // Center
-        y: 50, // Center
-        color: randomColor,
-      };
-      setTextOverlays(prev => [...prev, newOverlay]);
-    }
-
-    setNewText('');
-    setIsAddingText(false);
-  }
-
-  function handleMoveText(id: string, e: React.TouchEvent | React.MouseEvent) {
-    e.preventDefault();
-    const target = e.currentTarget as HTMLElement;
-    const rect = target.parentElement!.getBoundingClientRect();
-
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
-
-    setTextOverlays(prev => prev.map(t =>
-      t.id === id ? { ...t, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } : t
-    ));
-  }
-
-  function handleDeleteText(id: string) {
-    setTextOverlays(prev => prev.filter(t => t.id !== id));
   }
 
   async function handleSendMedia() {
@@ -304,48 +217,24 @@ export default function CameraView({ eventCode, uploaderHash, onUploadComplete }
     return (
       <div className="relative w-full h-full bg-black overflow-hidden">
         {/* Preview media */}
-        <div className="absolute inset-0">
-          {previewMedia.type === 'image' ? (
-            <img
-              src={previewMedia.url}
-              alt="Preview"
-              className="absolute inset-0 w-full h-full object-contain"
-            />
-          ) : (
-            <video
-              src={previewMedia.url}
-              className="absolute inset-0 w-full h-full object-contain"
-              controls
-              autoPlay
-              loop
-            />
-          )}
-
-          {/* Text overlays */}
-          {textOverlays.map((overlay) => (
-            <div
-              key={overlay.id}
-              style={{
-                position: 'absolute',
-                left: `${overlay.x}%`,
-                top: `${overlay.y}%`,
-                transform: 'translate(-50%, -50%)',
-                color: overlay.color,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                zIndex: 30,
-              }}
-              className="text-2xl font-bold cursor-move select-none"
-              onTouchMove={(e) => handleMoveText(overlay.id, e)}
-              onMouseMove={(e) => e.buttons === 1 && handleMoveText(overlay.id, e)}
-              onDoubleClick={() => handleDeleteText(overlay.id)}
-            >
-              {overlay.text}
-            </div>
-          ))}
-        </div>
+        {previewMedia.type === 'image' ? (
+          <img
+            src={previewMedia.url}
+            alt="Preview"
+            className="absolute inset-0 w-full h-full object-contain"
+          />
+        ) : (
+          <video
+            src={previewMedia.url}
+            className="absolute inset-0 w-full h-full object-contain"
+            controls
+            autoPlay
+            loop
+          />
+        )}
 
         {/* Top controls */}
-        <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-center z-50 bg-gradient-to-b from-black/60 to-transparent">
+        <div className="absolute top-0 left-0 right-0 p-5 flex justify-between items-center z-20 bg-gradient-to-b from-black/60 to-transparent">
           <button
             onClick={handleDiscardPreview}
             disabled={uploading}
@@ -356,66 +245,19 @@ export default function CameraView({ eventCode, uploaderHash, onUploadComplete }
             </svg>
           </button>
 
-          <div className="flex gap-3">
-            <button
-              onClick={handleDownloadMedia}
-              disabled={uploading}
-              className="p-3 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition disabled:opacity-50"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-            </button>
-
-            <button
-              onClick={handleAddText}
-              disabled={uploading}
-              className="p-3 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition disabled:opacity-50"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-          </div>
+          <button
+            onClick={() => {/* TODO: Add text/stickers */ }}
+            disabled={uploading}
+            className="p-3 bg-black/40 backdrop-blur-md rounded-full text-white hover:bg-black/60 transition disabled:opacity-50"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
         </div>
 
-        {/* Text input modal */}
-        {isAddingText && (
-          <div className="absolute inset-0 flex items-center justify-center z-30 bg-black/50 backdrop-blur-sm">
-            <div className="bg-black/80 backdrop-blur-md rounded-2xl p-6 w-80 mx-4">
-              <input
-                ref={textInputRef}
-                type="text"
-                value={newText}
-                onChange={(e) => setNewText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSaveText()}
-                placeholder="Type something..."
-                maxLength={50}
-                className="w-full px-4 py-3 bg-white/10 text-white placeholder-white/50 rounded-lg border-2 border-white/20 focus:border-white/40 outline-none text-lg font-medium"
-              />
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => {
-                    setIsAddingText(false);
-                    setNewText('');
-                  }}
-                  className="flex-1 py-3 bg-white/10 text-white rounded-lg font-medium hover:bg-white/20 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveText}
-                  className="flex-1 py-3 bg-white text-black rounded-lg font-bold hover:bg-gray-100 transition"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Caption input */}
-        <div className="absolute bottom-24 left-0 right-0 px-6 z-40">
+        <div className="absolute bottom-24 left-0 right-0 px-6 z-20">
           <input
             type="text"
             value={caption}
