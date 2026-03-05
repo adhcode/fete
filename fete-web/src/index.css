@@ -2,13 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Clash Display Font - using proper path */
+@font-face {
+  font-family: 'ClashDisplay';
+  src: local('ClashDisplay'), url('/clash-display-font/ClashDisplay-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'ClashDisplay';
+  src: local('ClashDisplay'), url('/clash-display-font/ClashDisplay-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'ClashDisplay';
+  src: local('ClashDisplay'), url('/clash-display-font/ClashDisplay-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'ClashDisplay';
+  src: local('ClashDisplay'), url('/clash-display-font/ClashDisplay-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+/* Satoshi Font */
+@font-face {
+  font-family: 'Satoshi';
+  src: local('Satoshi'), url('/satoshi/Satoshi-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: local('Satoshi'), url('/satoshi/Satoshi-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: local('Satoshi'), url('/satoshi/Satoshi-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Satoshi';
+  src: local('Satoshi'), url('/satoshi/Satoshi-Black.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --fete-bg: #0E0E11;
+  --fete-text: #F5F5F5;
+  --fete-accent: #FF4D4F;
+  --fete-accent2: #FF2D55;
+  --fete-glow: #7C3AED;
+  
+  /* Brand Colors */
+  --charcoal: #2D2D2D;
+  --gold: #FFD700;
+  --yellow: #FFC107;
+  --coral: #FF6B6B;
+  --purple: #9B59B6;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force Clash Display for headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'ClashDisplay', sans-serif !important;
 }
 
 .spinner {
@@ -24,4 +110,11 @@ body {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Theme root container */
+.theme-root {
+  min-height: 100vh;
+  background-color: var(--fete-bg);
+  color: var(--fete-text);
 }

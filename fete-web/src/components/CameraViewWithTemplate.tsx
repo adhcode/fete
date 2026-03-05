@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { api } from '../lib/api';
 import { composeImageWithTemplate, loadImage } from '../lib/template';
 import type { Event, TemplateConfig, Template } from '../types';
+import TemplateSwiper from './TemplateSwiper';
 
 interface Props {
   event: Event;
@@ -628,6 +629,14 @@ export default function CameraView({ event, uploaderHash, onUploadComplete }: Pr
         />
       )}
 
+      {/* Template Swiper Overlay */}
+      <TemplateSwiper
+        templates={availableTemplates}
+        activeTemplateId={selectedTemplateId}
+        onChange={(template) => setSelectedTemplateId(template?.id || null)}
+        disabled={uploading || !cameraReady}
+      />
+
       <input
         ref={fileInputRef}
         type="file"
@@ -745,43 +754,6 @@ export default function CameraView({ event, uploaderHash, onUploadComplete }: Pr
           <div className="w-[60px]" />
         </div>
       </div>
-
-      {/* Template Selector - Snapchat Style */}
-      {availableTemplates.length > 0 && !previewMedia && (
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20">
-          <div className="flex flex-col gap-3">
-            {availableTemplates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => setSelectedTemplateId(template.id)}
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                  selectedTemplateId === template.id
-                    ? 'bg-white text-black scale-110 shadow-lg'
-                    : 'bg-black/40 backdrop-blur-md text-white hover:bg-black/60'
-                }`}
-                title={template.name}
-              >
-                <span className="text-xs font-bold">{template.name.charAt(0)}</span>
-              </button>
-            ))}
-            
-            {/* No Template Option */}
-            <button
-              onClick={() => setSelectedTemplateId(null)}
-              className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-                selectedTemplateId === null
-                  ? 'bg-white text-black scale-110 shadow-lg'
-                  : 'bg-black/40 backdrop-blur-md text-white hover:bg-black/60'
-              }`}
-              title="No Template"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

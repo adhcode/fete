@@ -80,6 +80,7 @@ export class UploadsService {
         mimeType: dto.contentType,
         caption: dto.caption,
         uploaderHash: dto.uploaderHash,
+        guestId: dto.uploaderHash, // Use uploaderHash as guestId for now
         originalKey: storageKey,
         approved: !event.approvalRequired,
       },

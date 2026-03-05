@@ -79,24 +79,38 @@ npm run dev
 
 ### Guest Flow
 1. Enter event code (e.g., `AB3X9K`)
-2. Take photo or upload from gallery
-3. Add optional caption
-4. View shared gallery with all photos
+2. Land on story-first event page
+3. View story circles (My Story + others)
+4. Tap floating camera button to capture
+5. Apply Snapchat-style templates with swipe gestures
+6. Add optional caption
+7. Upload to story with success toast
+8. View stories in fullscreen immersive viewer
+9. Browse recent moments grid
 
-### Organizer Flow (Coming Soon)
+### Organizer Flow
 1. Create events with unique codes
-2. Configure approval settings
-3. Review and approve photos
-4. Export photos as ZIP
-5. View analytics
+2. Configure approval settings and templates
+3. Add custom theme colors to templates
+4. Review and approve photos
+5. Manage event settings
+6. View event dashboard
 
 ### Technical Features
-- Direct-to-R2 uploads (no backend bandwidth)
-- Background image processing (Sharp)
-- Multiple image variants (large, thumbnail)
-- Cursor-based pagination for infinite scroll
-- Rate limiting per event/guest
-- Photo approval workflow
+- **Story-First UI**: Instagram/Snapchat-style story experience
+- **Dynamic Theming**: UI adapts to event template colors
+- **Camera-First**: Snapchat-style camera with live template overlay
+- **Template System**: Swipeable templates with WYSIWYG preview
+- **Floating Camera**: Always-accessible FAB with glow animation
+- **Guest Identity**: Stable per-device identity (no login required)
+- **60fps Animations**: Framer Motion for smooth micro-interactions
+- **Direct-to-R2 uploads**: No backend bandwidth usage
+- **Background processing**: Sharp for images, FFmpeg for videos
+- **Multiple variants**: Large, thumbnail, and poster images
+- **Cursor-based pagination**: Infinite scroll with stable ordering
+- **Rate limiting**: Per event/guest upload limits
+- **Photo approval**: Optional moderation workflow
+- **Authentication**: JWT-based organizer auth
 
 ## Tech Stack
 
@@ -215,30 +229,50 @@ redis-server
 
 ### ✅ Completed
 - Backend API with upload flow
-- Background image processing
-- Photo gallery with pagination
+- Background image/video processing
+- Camera-first UI with live templates
+- Snapchat-style template swiper
+- News feed with likes and trending
+- Guest identity system
+- Organizer authentication (JWT)
+- Event and template management
+- Photo approval workflow
+- Stories view
 - Web app with camera capture
 - Marketing site structure
 
-### 🚧 In Progress
-- Organizer dashboard
-- Authentication (JWT)
-- Photo approval UI
-
 ### 📋 Planned
 - Photo lightbox/modal
+- Comments on posts
 - Share links for photos/bundles
 - Bulk photo download (ZIP)
-- Event analytics
-- Photo filters/effects
+- Event analytics dashboard
+- Push notifications
+- Content moderation tools
 - Real-time updates (WebSocket)
 
 ## Documentation
 
+### Getting Started
+- [Quick Start Guide](QUICK_START.md)
+- [Architecture Overview](ARCHITECTURE.md)
+- [Services Guide](SERVICES_GUIDE.md)
+- [Startup Checklist](STARTUP_CHECKLIST.md)
+
+### Features
+- [News Feed Implementation](NEWS_FEED_IMPLEMENTATION.md)
+- [Feed Quick Start](FEED_QUICK_START.md)
+- [Template System](TEMPLATE_IMPLEMENTATION.md)
+- [Video Support](fete-backend/VIDEO_IMPLEMENTATION.md)
+- [Organizer UI](ORGANIZER_UI_COMPLETE.md)
+
+### Backend
 - [Backend Implementation](fete-backend/IMPLEMENTATION_SUMMARY.md)
 - [API Testing Guide](fete-backend/API_TESTING.md)
-- [Architecture Overview](ARCHITECTURE.md)
-- [Quick Start Guide](QUICK_START.md)
+
+### Testing
+- [Testing Guide](TESTING_GUIDE.md)
+- Test Scripts: `test-feed.sh`, `test-auth-flow.sh`, `test-templates.sh`
 
 ## License
 

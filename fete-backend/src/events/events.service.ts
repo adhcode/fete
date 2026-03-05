@@ -16,6 +16,12 @@ export class EventsService {
     venue?: string;
     organizerId: string;
     templateId?: string;
+    hashtag?: string;
+    approvalRequired?: boolean;
+    publicGallery?: boolean;
+    allowShareLinks?: boolean;
+    maxUploadsPerGuest?: number;
+    maxUploadsTotal?: number;
   }) {
     let code: string;
     let exists = true;
@@ -37,6 +43,12 @@ export class EventsService {
         venue: data.venue,
         organizerId: data.organizerId,
         templateId: data.templateId,
+        hashtag: data.hashtag,
+        approvalRequired: data.approvalRequired ?? false,
+        publicGallery: data.publicGallery ?? false,
+        allowShareLinks: data.allowShareLinks ?? true,
+        maxUploadsPerGuest: data.maxUploadsPerGuest,
+        maxUploadsTotal: data.maxUploadsTotal,
       },
     });
   }
@@ -67,5 +79,27 @@ export class EventsService {
     }
 
     return event;
+  }
+
+  async getOrganizerEvents(organizerId: string) {
+    const events = await this.prisma.event.findMany({
+      where: { organizerId },
+      include: {
+        template: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            photos: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return events;
   }
 }
