@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateTemplateDto, UpdateTemplateDto } from './dto';
@@ -10,7 +10,7 @@ export class TemplatesService {
     private storage: StorageService,
   ) {}
 
-  async createTemplate(dto: CreateTemplateDto) {
+  async createTemplate(dto: CreateTemplateDto, organizerId: string) {
     // If overlayUrl is provided, we'll store it as overlayKey
     // For MVP, assume overlayUrl is already a public R2 URL or we'll handle upload separately
     const overlayKey = dto.overlayUrl 
@@ -23,6 +23,7 @@ export class TemplatesService {
         config: dto.config as any,
         overlayKey,
         previewUrl: null, // Can be set later
+        createdByOrganizerId: organizerId,
       },
     });
 
@@ -59,13 +60,18 @@ export class TemplatesService {
     return this.mapTemplateToResponse(template);
   }
 
-  async updateTemplate(id: string, dto: UpdateTemplateDto) {
+  async updateTemplate(id: string, dto: UpdateTemplateDto, organizerId: string) {
     const template = await this.prisma.template.findUnique({
       where: { id },
     });
 
     if (!template) {
       throw new NotFoundException('Template not found');
+    }
+
+    // Check ownership
+    if (template.createdByOrganizerId && template.createdByOrganizerId !== organizerId) {
+      throw new ForbiddenException('You do not have permission to update this template');
     }
 
     const overlayKey = dto.overlayUrl
@@ -84,7 +90,20 @@ export class TemplatesService {
     return this.mapTemplateToResponse(updated);
   }
 
-  async deleteTemplate(id: string) {
+  async deleteTemplate(id: string, organizerId: string) {
+    const template = await this.prisma.template.findUnique({
+      where: { id },
+    });
+
+    if (!template) {
+      throw new NotFoundException('Template not found');
+    }
+
+    // Check ownership
+    if (template.createdByOrganizerId && template.createdByOrganizerId !== organizerId) {
+      throw new ForbiddenException('You do not have permission to delete this template');
+    }
+
     await this.prisma.template.delete({
       where: { id },
     });

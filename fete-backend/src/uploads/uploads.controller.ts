@@ -15,7 +15,9 @@ import {
   GetStoryQuerySchema,
   ApprovePhotoSchema,
 } from './dto';
+import { Public } from '../auth/public.decorator';
 
+@Public()
 @Controller('api')
 export class UploadsController {
   constructor(private uploads: UploadsService) {}

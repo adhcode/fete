@@ -51,6 +51,22 @@ export interface TemplateConfig {
   };
 }
 
+export interface TemplateConfig {
+  version: string;
+  overlay: {
+    url?: string;
+    opacity: number;
+    blendMode: 'normal' | 'multiply' | 'screen' | 'overlay';
+  };
+  textFields: TextField[];
+  safeArea?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
+}
+
 export interface TextField {
   id: string;
   defaultValue: string;
@@ -104,4 +120,23 @@ export interface GetPhotosResponse {
 export interface GetStoryResponse {
   data: Photo[];
   nextCursor?: string | null;
+}
+
+export interface FeedItem {
+  id: string;
+  caption?: string;
+  mediaType: MediaType;
+  mimeType?: string;
+  width?: number;
+  height?: number;
+  likeCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  // For images
+  largeUrl?: string;
+  thumbUrl?: string;
+  // For videos
+  playUrl?: string;
+  posterUrl?: string;
+  durationSec?: number;
 }

@@ -27,7 +27,8 @@ model Organizer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events Event[]
+  events            Event[]
+  createdTemplates  Template[] @relation("CreatedTemplates")
 }
 
 model Template {
@@ -36,12 +37,17 @@ model Template {
   previewUrl String? // Public URL to preview image
   overlayKey String? // R2 key for overlay PNG
   config     Json    // Template configuration (text fields, overlay settings)
+  
+  createdByOrganizerId String?
+  createdBy            Organizer? @relation("CreatedTemplates", fields: [createdByOrganizerId], references: [id])
+  
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   events Event[]
 
   @@index([createdAt])
+  @@index([createdByOrganizerId])
 }
 
 model Event {
@@ -112,6 +118,12 @@ model Photo {
 
   // For abuse control (hash of device fingerprint, or random guestId stored in localStorage)
   uploaderHash String?
+  
+  // Guest identity (stable per device per event)
+  guestId String?
+
+  // Like count (denormalized for performance)
+  likeCount Int @default(0)
 
   // Public sharing
   shareSlug String? @unique // e.g. "p_x8K2d1" (optional)
@@ -120,11 +132,28 @@ model Photo {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   shareBundleItems ShareBundleItem[]
+  likes            Like[]
 
   @@index([eventId, createdAt])
   @@index([eventId, approved, createdAt])
   @@index([eventId, mediaType, createdAt])
+  @@index([eventId, likeCount, createdAt])
   @@index([status])
+  @@index([guestId])
+}
+
+model Like {
+  id      String @id @default(cuid())
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  
+  guestId String
+  
+  createdAt DateTime @default(now())
+
+  @@unique([photoId, guestId])
+  @@index([photoId])
+  @@index([createdAt])
 }
 
 model ShareBundle {

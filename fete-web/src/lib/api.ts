@@ -1,12 +1,105 @@
-import type { Photo, Event, UploadIntentResponse, GetPhotosResponse, GetStoryResponse, Template } from '../types';
+import type { Photo, Event, UploadIntentResponse, GetPhotosResponse, GetStoryResponse, Template, FeedItem } from '../types';
+import { auth } from './auth';
+import { getGuestId } from './guestId';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 class ApiClient {
   private baseUrl: string;
+  private currentEventCode: string | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+  }
+
+  setCurrentEvent(eventCode: string) {
+    this.currentEventCode = eventCode;
+  }
+
+  private getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    const token = auth.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Add guest ID header if we have a current event
+    if (this.currentEventCode) {
+      headers['X-Fete-Guest'] = getGuestId(this.currentEventCode);
+    }
+
+    return headers;
+  }
+
+  // Auth endpoints
+  async signup(email: string, password: string, name?: string) {
+    const res = await fetch(`${this.baseUrl}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Signup failed');
+    }
+    return res.json();
+  }
+
+  async login(email: string, password: string) {
+    const res = await fetch(`${this.baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Login failed');
+    }
+    return res.json();
+  }
+
+  async getMe() {
+    const res = await fetch(`${this.baseUrl}/api/auth/me`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to get user');
+    return res.json();
+  }
+
+  // Event endpoints
+  async createEvent(data: {
+    name: string;
+    date?: string;
+    venue?: string;
+    hashtag?: string;
+    templateId?: string;
+    approvalRequired?: boolean;
+    publicGallery?: boolean;
+    allowShareLinks?: boolean;
+    maxUploadsPerGuest?: number;
+    maxUploadsTotal?: number;
+  }) {
+    const res = await fetch(`${this.baseUrl}/events`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Failed to create event');
+    }
+    return res.json();
+  }
+
+  async getMyEvents() {
+    const res = await fetch(`${this.baseUrl}/events/organizer/my-events`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch events');
+    return res.json();
   }
 
   async getEvent(code: string): Promise<Event> {
@@ -112,6 +205,49 @@ class ApiClient {
       `${this.baseUrl}/api/events/${eventCode}/story?${query}`
     );
     if (!res.ok) throw new Error('Failed to fetch story');
+    return res.json();
+  }
+
+  // Feed endpoints
+  async getEventFeed(
+    eventCode: string,
+    params?: {
+      sort?: 'latest' | 'trending';
+      cursor?: string;
+      limit?: number;
+    }
+  ): Promise<{ items: FeedItem[]; nextCursor: string | null }> {
+    const query = new URLSearchParams();
+    if (params?.sort) query.set('sort', params.sort);
+    if (params?.cursor) query.set('cursor', params.cursor);
+    if (params?.limit) query.set('limit', params.limit.toString());
+
+    const res = await fetch(
+      `${this.baseUrl}/api/events/${eventCode}/feed?${query}`,
+      {
+        headers: this.getHeaders(),
+      }
+    );
+    if (!res.ok) throw new Error('Failed to fetch feed');
+    return res.json();
+  }
+
+  // Like endpoints
+  async likePhoto(photoId: string): Promise<{ likeCount: number; likedByMe: boolean }> {
+    const res = await fetch(`${this.baseUrl}/api/photos/${photoId}/like`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to like photo');
+    return res.json();
+  }
+
+  async unlikePhoto(photoId: string): Promise<{ likeCount: number; likedByMe: boolean }> {
+    const res = await fetch(`${this.baseUrl}/api/photos/${photoId}/like`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to unlike photo');
     return res.json();
   }
 }

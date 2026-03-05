@@ -3,29 +3,31 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { Event, Photo } from '../types';
 import { getUploaderHash } from '../lib/storage';
+import { getGuestId } from '../lib/guestId';
 import CameraView from '../components/CameraViewWithTemplate';
-import Gallery from '../components/Gallery';
+import EventFeed from '../components/EventFeed';
 import StoryViewer from '../components/StoryViewer';
 
-type View = 'camera' | 'gallery' | 'stories';
+type View = 'camera' | 'feed' | 'stories';
 
 export default function EventPageNew() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
-  const [photos, setPhotos] = useState<Photo[]>([]);
   const [storyMedia, setStoryMedia] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<View>('camera');
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [storyNextCursor, setStoryNextCursor] = useState<string | null>(null);
-  const [showStoryViewer, setShowStoryViewer] = useState(false);
 
   useEffect(() => {
     if (!code) return;
+    
+    // Initialize guest ID for this event
+    getGuestId(code);
+    api.setCurrentEvent(code);
+    
     loadEvent();
-    loadPhotos();
     loadStory();
   }, [code]);
 
@@ -37,26 +39,6 @@ export default function EventPageNew() {
       setError('Event not found');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadPhotos(cursor?: string) {
-    try {
-      const data = await api.getEventPhotos(code!, {
-        limit: 30,
-        cursor,
-        status: 'PROCESSED',
-      });
-
-      if (cursor) {
-        setPhotos(prev => [...prev, ...data.data]);
-      } else {
-        setPhotos(data.data);
-      }
-
-      setNextCursor(data.nextCursor || null);
-    } catch (err) {
-      console.error('Failed to load photos:', err);
     }
   }
 
@@ -80,13 +62,7 @@ export default function EventPageNew() {
   }
 
   async function handleUploadComplete() {
-    await Promise.all([loadPhotos(), loadStory()]);
-  }
-
-  function handleLoadMore() {
-    if (nextCursor) {
-      loadPhotos(nextCursor);
-    }
+    await loadStory();
   }
 
   function handleLoadMoreStory() {
@@ -135,15 +111,10 @@ export default function EventPageNew() {
           />
         )}
 
-        {currentView === 'gallery' && (
+        {currentView === 'feed' && (
           <div className="w-full h-full overflow-y-auto bg-black">
-            <div className="p-4">
-              <h2 className="text-2xl font-bold text-white mb-6">Gallery</h2>
-              <Gallery
-                photos={photos}
-                onLoadMore={nextCursor ? handleLoadMore : undefined}
-                loadingMore={false}
-              />
+            <div className="pt-20 pb-6">
+              <EventFeed eventCode={code!} />
             </div>
           </div>
         )}
@@ -188,23 +159,23 @@ export default function EventPageNew() {
       {/* Bottom navigation */}
       <div className="absolute bottom-0 left-0 right-0 z-30 pb-6 pt-4 px-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
         <div className="flex items-center justify-around max-w-md mx-auto">
-          {/* Gallery */}
+          {/* Feed */}
           <button
-            onClick={() => setCurrentView('gallery')}
+            onClick={() => setCurrentView('feed')}
             className="flex flex-col items-center gap-1.5 transition-all"
           >
             <div className={`p-3 rounded-2xl transition-all ${
-              currentView === 'gallery' ? 'bg-white/20 scale-110' : 'bg-transparent'
+              currentView === 'feed' ? 'bg-white/20 scale-110' : 'bg-transparent'
             }`}>
               <svg className={`w-7 h-7 transition-colors ${
-                currentView === 'gallery' ? 'text-white' : 'text-white/60'
+                currentView === 'feed' ? 'text-white' : 'text-white/60'
               }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
             <span className={`text-xs font-semibold transition-colors ${
-              currentView === 'gallery' ? 'text-white' : 'text-white/60'
-            }`}>Gallery</span>
+              currentView === 'feed' ? 'text-white' : 'text-white/60'
+            }`}>Feed</span>
           </button>
 
           {/* Camera (always active) */}
@@ -253,16 +224,6 @@ export default function EventPageNew() {
           </button>
         </div>
       </div>
-
-      {/* Story viewer overlay */}
-      {showStoryViewer && storyMedia.length > 0 && (
-        <StoryViewer
-          media={storyMedia}
-          initialIndex={0}
-          onClose={() => setShowStoryViewer(false)}
-          onLoadMore={storyNextCursor ? handleLoadMoreStory : undefined}
-        />
-      )}
     </div>
   );
 }
